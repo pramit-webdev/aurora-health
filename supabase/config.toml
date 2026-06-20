@@ -1,0 +1,21 @@
+project_id = "mgzkwieamccnjnqgxpnx"
+
+[auth]
+enable_signup = true
+site_url = "aurora://"
+additional_redirect_urls = [
+  "aurora://",
+  "exp://10.221.12.148:8081",
+  "exp://**",
+  "exp://127.0.0.1:8081",
+  "http://localhost:8081",
+]
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_CLIENT_SECRET)"

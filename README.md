@@ -1,56 +1,104 @@
-# Welcome to your Expo app 👋
+# Aurora — your personal health companion 🌌
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A mobile-first AI health companion built with **Expo + Supabase + OpenAI/Groq** for the Aurora hackathon.
 
-## Get started
+> *Understand yourself better every day.*
 
-1. Install dependencies
+- 💧 Hydration with a living, animated water bottle
+- 🌙 Sleep logging, trends and consistency scoring
+- ✅ Habits with streaks, skip/pause, smart scheduling
+- 🥗 Nutrition with **AI macro estimation** from plain text
+- 🎙️ **Voice-to-voice AI companion that takes real actions** (logs water/sleep/meals, creates and completes habits) through conversation
+- ✨ Daily AI insight generated from your real data
+- 🧠 Health memory — Aurora remembers your patterns
+- 🏆 Achievements, streaks, weekly/monthly reports
 
-   ```bash
-   npm install
-   ```
+**Architecture:** React Native (Expo SDK 56, expo-router, Reanimated) → Supabase (Postgres + RLS, Auth, Edge Functions) → OpenAI (GPT-4o-mini agent w/ tool calling + TTS) + Groq (Whisper STT). All AI keys live server-side in Edge Functions — the app never sees them.
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 1. One-time setup (~20 minutes)
 
-In the output, you'll find options to open the app in a
+### A. Supabase project
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+1. Create a free project at [database.new](https://database.new).
+2. In **SQL Editor**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql) and **Run**. This creates all tables, the signup trigger, and row-level security.
+3. (For the smoothest demo) **Authentication → Sign In / Up → Email** — turn **off** "Confirm email".
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### B. Environment for the app
 
 ```bash
-npm run reset-project
+cp .env.example .env
+# Fill in from Supabase Dashboard → Settings → API:
+#   EXPO_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+#   EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon public key>
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### C. Deploy the AI backend (Edge Functions)
 
-### Other setup steps
+Install the Supabase CLI ([docs](https://supabase.com/docs/guides/cli)), then:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npx supabase login
+npx supabase link --project-ref <your-project-ref>
 
-## Learn more
+# AI provider keys (server-side only)
+npx supabase secrets set OPENAI_API_KEY=sk-...
+npx supabase secrets set GROQ_API_KEY=gsk_...   # optional but recommended (free fast STT)
 
-To learn more about developing your project with Expo, look at the following resources:
+# Deploy all four functions
+npx supabase functions deploy ai-chat transcribe daily-insight parse-meal
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### D. (Optional) Google sign-in
 
-## Join the community
+Supabase Dashboard → **Authentication → Providers → Google**: follow the wizard (needs a Google Cloud OAuth client). Email auth works without this.
 
-Join our community of developers creating universal apps.
+---
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 2. Run it on your phone
+
+```bash
+npm install
+npx expo start
+```
+
+Install **Expo Go** on your Android phone (same Wi-Fi as your computer) and scan the QR code.
+
+---
+
+## 3. Build the submission APK
+
+```bash
+npm i -g eas-cli
+eas login                # free Expo account
+# Put your two EXPO_PUBLIC_ values into eas.json → build.preview.env
+eas build -p android --profile preview
+```
+
+The build runs in Expo's cloud and returns an installable **APK link** (also visible at expo.dev). That link *is* the Android installation link for submission.
+
+---
+
+## Try saying to Aurora 🎙️
+
+- "How am I doing this week?"
+- "I drank 500 ml of water."
+- "I slept seven and a half hours last night."
+- "Create a habit to meditate every morning."
+- "I had paneer rice and salad for lunch."
+- "What should I focus on to sleep better?"
+
+Every action Aurora takes appears as a ✓ chip in the conversation and instantly updates the dashboard.
+
+## Project layout
+
+```
+src/
+  app/            screens (expo-router): welcome, auth, setup wizard, tabs, modules, companion
+  components/     design system (ui/), dashboard cards, water bottle, charts, aurora orb
+  lib/            supabase client, typed API layer, zustand store, AI client, helpers
+supabase/
+  schema.sql      full Postgres schema + RLS
+  functions/      ai-chat (agent + tools), transcribe (Whisper), daily-insight, parse-meal
+```
