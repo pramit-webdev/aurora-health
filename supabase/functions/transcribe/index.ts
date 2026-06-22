@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   if (opt) return opt;
 
   try {
-    const { supabase, user } = await getAuthedClient(req); // auth gate
+    await getAuthedClient(req); // auth gate
 
     let bytes: Uint8Array;
     let format = 'm4a';
@@ -88,27 +88,7 @@ Deno.serve(async (req) => {
 
     // Drop hallucinated transcripts from silent/unclear audio so the app shows
     // "didn't catch that" instead of a nonsense reply.
-    if (isHallucination(text)) {
-      console.log('[transcribe] dropped hallucination:', JSON.stringify(text), 'bytes:', bytes.length);
-      text = '';
-    }
-
-    // Diagnostic — capture the raw audio ONLY on failures (empty transcript) so
-    // we can analyze a bad recording without bloating on every success.
-    let audio_b64: string | null = null;
-    if (!text.trim()) {
-      let b = '';
-      const chunk = 0x8000;
-      for (let i = 0; i < bytes.length; i += chunk) b += String.fromCharCode(...bytes.subarray(i, i + chunk));
-      audio_b64 = btoa(b);
-    }
-    await supabase.from('stt_debug').insert({
-      user_id: user.id,
-      audio_bytes: bytes.length,
-      content_type: contentType.slice(0, 60),
-      transcript: text,
-      audio_b64,
-    });
+    if (isHallucination(text)) text = '';
 
     return json({ text });
   } catch (e) {
