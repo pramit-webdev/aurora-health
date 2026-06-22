@@ -48,3 +48,5 @@ example
 supabase/.secrets.env
 supabase/.dbpass.env
 supabase/.service.key
+
+supabase/.temp/
